@@ -1,479 +1,749 @@
-<!DOCTYPE html> 
-  
- <html lang="en"> 
-  
- <script> 
-  
-   var _hmt = _hmt || []; 
-  
-   (function () { 
-  
-     var hm = document.createElement("script"); 
-  
-     hm.src = "https://hm.baidu.com/hm.js?c923daf3182a4b0ce01878475080aadc"; 
-  
-     var s = document.getElementsByTagName("script")[0]; 
-  
-     s.parentNode.insertBefore(hm, s); 
-  
-   })(); 
-  
- </script> 
-  
-  
-  
- <head> 
-  
-   <meta charset="UTF-8"> 
-  
-   <title>像从前一拍即合那样一拍两散。</title> 
-  
- </head> 
-  
- <style> 
-  
-   body { 
-  
-     margin: 0; 
-  
-     overflow: hidden; 
-  
-     background: black; 
-  
-   } 
-  
-  
-  
-   canvas { 
-  
-     position: absolute; 
-  
-   } 
-  
- </style> 
-  
-  
-  
- <body> 
-  
-  
-  
-   <canvas></canvas> 
-  
-   <canvas></canvas> 
-  
-   <canvas></canvas> 
-  
-  
-  
-   <script> 
-  
-  
-  
-     function GetRequest() { 
-  
-       var url = decodeURI(location.search); //获取url中"?"符后的字串 
-  
-       var theRequest = new Object(); 
-  
-       if (url.indexOf("?") != -1) { 
-  
-         var str = url.substr(1); 
-  
-         strs = str.split("&"); 
-  
-         for (var i = 0; i < strs.length; i++) { 
-  
-           theRequest[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]); 
-  
-         } 
-  
-       } 
-  
-       return theRequest; 
-  
-     } 
-  
-     class Shard { 
-  
-       constructor(x, y, hue) { 
-  
-         this.x = x; 
-  
-         this.y = y; 
-  
-         this.hue = hue; 
-  
-         this.lightness = 50; 
-  
-         this.size = 15 + Math.random() * 10; 
-  
-         const angle = Math.random() * 2 * Math.PI; 
-  
-         const blastSpeed = 1 + Math.random() * 6; 
-  
-         this.xSpeed = Math.cos(angle) * blastSpeed; 
-  
-         this.ySpeed = Math.sin(angle) * blastSpeed; 
-  
-         this.target = getTarget(); 
-  
-         this.ttl = 100; 
-  
-         this.timer = 0; 
-  
-       } 
-  
-       draw() { 
-  
-         ctx2.fillStyle = `hsl(${this.hue}, 100%, ${this.lightness}%)`; 
-  
-         ctx2.beginPath(); 
-  
-         ctx2.arc(this.x, this.y, this.size, 0, 2 * Math.PI); 
-  
-         ctx2.closePath(); 
-  
-         ctx2.fill(); 
-  
-       } 
-  
-       update() { 
-  
-         if (this.target) { 
-  
-           const dx = this.target.x - this.x; 
-  
-           const dy = this.target.y - this.y; 
-  
-           const dist = Math.sqrt(dx * dx + dy * dy); 
-  
-           const a = Math.atan2(dy, dx); 
-  
-           const tx = Math.cos(a) * 5; 
-  
-           const ty = Math.sin(a) * 5; 
-  
-           this.size = lerp(this.size, 1.5, 0.05); 
-  
-  
-  
-           if (dist < 5) { 
-  
-             this.lightness = lerp(this.lightness, 100, 0.01); 
-  
-             this.xSpeed = this.ySpeed = 0; 
-  
-             this.x = lerp(this.x, this.target.x + fidelity / 2, 0.05); 
-  
-             this.y = lerp(this.y, this.target.y + fidelity / 2, 0.05); 
-  
-             this.timer += 1; 
-  
-           } else 
-  
-             if (dist < 10) { 
-  
-               this.lightness = lerp(this.lightness, 100, 0.01); 
-  
-               this.xSpeed = lerp(this.xSpeed, tx, 0.1); 
-  
-               this.ySpeed = lerp(this.ySpeed, ty, 0.1); 
-  
-               this.timer += 1; 
-  
-             } else { 
-  
-               this.xSpeed = lerp(this.xSpeed, tx, 0.02); 
-  
-               this.ySpeed = lerp(this.ySpeed, ty, 0.02); 
-  
-             } 
-  
-         } else { 
-  
-           this.ySpeed += 0.05; 
-  
-           //this.xSpeed = lerp(this.xSpeed, 0, 0.1); 
-  
-           this.size = lerp(this.size, 1, 0.05); 
-  
-  
-  
-           if (this.y > c2.height) { 
-  
-             shards.forEach((shard, idx) => { 
-  
-               if (shard === this) { 
-  
-                 shards.splice(idx, 1); 
-  
-               } 
-  
-             }); 
-  
-           } 
-  
-         } 
-  
-         this.x = this.x + this.xSpeed; 
-  
-         this.y = this.y + this.ySpeed; 
-  
-       } 
-  
-     } 
-  
-  
-  
-     class Rocket { 
-  
-       constructor() { 
-  
-         const quarterW = c2.width / 4; 
-  
-         this.x = quarterW + Math.random() * (c2.width - quarterW); 
-  
-         this.y = c2.height - 15; 
-  
-         this.angle = Math.random() * Math.PI / 4 - Math.PI / 6; 
-  
-         this.blastSpeed = 6 + Math.random() * 7; 
-  
-         this.shardCount = 15 + Math.floor(Math.random() * 15); 
-  
-         this.xSpeed = Math.sin(this.angle) * this.blastSpeed; 
-  
-         this.ySpeed = -Math.cos(this.angle) * this.blastSpeed; 
-  
-         this.hue = Math.floor(Math.random() * 360); 
-  
-         this.trail = []; 
-  
-       } 
-  
-       draw() { 
-  
-         ctx2.save(); 
-  
-         ctx2.translate(this.x, this.y); 
-  
-         ctx2.rotate(Math.atan2(this.ySpeed, this.xSpeed) + Math.PI / 2); 
-  
-         ctx2.fillStyle = `hsl(${this.hue}, 100%, 50%)`; 
-  
-         ctx2.fillRect(0, 0, 5, 15); 
-  
-         ctx2.restore(); 
-  
-       } 
-  
-       update() { 
-  
-         this.x = this.x + this.xSpeed; 
-  
-         this.y = this.y + this.ySpeed; 
-  
-         this.ySpeed += 0.1; 
-  
-       } 
-  
-  
-  
-       explode() { 
-  
-         for (let i = 0; i < 70; i++) { 
-  
-           shards.push(new Shard(this.x, this.y, this.hue)); 
-  
-         } 
-  
-       } 
-  
-     } 
-  
-  
-  
-     console.log(GetRequest('val').val) 
-  
-     // INITIALIZATION 
-  
-     const [c1, c2, c3] = document.querySelectorAll('canvas'); 
-  
-     const [ctx1, ctx2, ctx3] = [c1, c2, c3].map(c => c.getContext('2d')); 
-  
-     let fontSize = 200; 
-  
-     const rockets = []; 
-  
-     const shards = []; 
-  
-     const targets = []; 
-  
-     const fidelity = 3; 
-  
-     let counter = 0; 
-  
-     c2.width = c3.width = window.innerWidth; 
-  
-     c2.height = c3.height = window.innerHeight; 
-  
-     ctx1.fillStyle = '#000'; 
-  
-     const text = '傻小璞天天开心。' 
-  
-     let textWidth = 99999999; 
-  
-  
-  
-     while (textWidth > window.innerWidth) { 
-  
-       ctx1.font = `900 ${fontSize--}px Arial`; 
-  
-       textWidth = ctx1.measureText(text).width; 
-  
-     } 
-  
-  
-  
-     c1.width = textWidth; 
-  
-     c1.height = fontSize * 1.5; 
-  
-     ctx1.font = `900 ${fontSize}px Arial`; 
-  
-     ctx1.fillText(text, 0, fontSize); 
-  
-     const imgData = ctx1.getImageData(0, 0, c1.width, c1.height); 
-  
-     for (let i = 0, max = imgData.data.length; i < max; i += 4) { 
-  
-       const alpha = imgData.data[i + 3]; 
-  
-       const x = Math.floor(i / 4) % imgData.width; 
-  
-       const y = Math.floor(i / 4 / imgData.width); 
-  
-  
-  
-       if (alpha && x % fidelity === 0 && y % fidelity === 0) { 
-  
-         targets.push({ x, y }); 
-  
-       } 
-  
-     } 
-  
-  
-  
-     ctx3.fillStyle = '#FFF'; 
-  
-     ctx3.shadowColor = '#FFF'; 
-  
-     ctx3.shadowBlur = 25; 
-  
-  
-  
-     // ANIMATION LOOP 
-  
-     (function loop() { 
-  
-       ctx2.fillStyle = "rgba(0, 0, 0, .1)"; 
-  
-       ctx2.fillRect(0, 0, c2.width, c2.height); 
-  
-       //ctx2.clearRect(0, 0, c2.width, c2.height); 
-  
-       counter += 1; 
-  
-  
-  
-       if (counter % 15 === 0) { 
-  
-         rockets.push(new Rocket()); 
-  
-       } 
-  
-       rockets.forEach((r, i) => { 
-  
-         r.draw(); 
-  
-         r.update(); 
-  
-         if (r.ySpeed > 0) { 
-  
-           r.explode(); 
-  
-           rockets.splice(i, 1); 
-  
-         } 
-  
-       }); 
-  
-  
-  
-       shards.forEach((s, i) => { 
-  
-         s.draw(); 
-  
-         s.update(); 
-  
-  
-  
-         if (s.timer >= s.ttl || s.lightness >= 99) { 
-  
-           ctx3.fillRect(s.target.x, s.target.y, fidelity + 1, fidelity + 1); 
-  
-           shards.splice(i, 1); 
-  
-         } 
-  
-       }); 
-  
-  
-  
-       requestAnimationFrame(loop); 
-  
-     })(); 
-  
-  
-  
-     // HELPER FUNCTIONS 
-  
-     const lerp = (a, b, t) => Math.abs(b - a) > 0.1 ? a + t * (b - a) : b; 
-  
-  
-  
-     function getTarget() { 
-  
-       if (targets.length > 0) { 
-  
-         const idx = Math.floor(Math.random() * targets.length); 
-  
-         let { x, y } = targets[idx]; 
-  
-         targets.splice(idx, 1); 
-  
-  
-  
-         x += c2.width / 2 - textWidth / 2; 
-  
-         y += c2.height / 2 - fontSize / 2; 
-  
-  
-  
-         return { x, y }; 
-  
-       } 
-  
-     } 
-  
-   </script> 
-  
-  
-  
- </body> 
-  
-  
-  
- </html>
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<title>傻小璞</title>
+
+<style>
+
+html,
+
+body {
+height: 100%;
+
+margin: 0;
+
+padding: 0;
+
+}
+
+ul,
+
+li {
+text-indent: 0;
+
+text-decoration: none;
+
+margin: 0;
+
+padding: 0;
+
+}
+
+img {
+border: 0;
+
+}
+
+body {
+background-color: #000;
+
+}
+
+canvas {
+cursor: crosshair;
+
+display: block;
+
+left: 0;
+
+position: absolute;
+
+top: 0;
+
+z-index: 20;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<script
+
+type="text/javascript"
+
+src="https://cdn-static-devbit.csdn.net/devbit-static/js/jquery-3.3.1.min.js"
+
+></script>
+
+<script type="text/javascript">
+
+$(function () {
+var Fireworks = function () {
+var self = this;
+
+var rand = function (rMi, rMa) {
+return ~~(Math.random() * (rMa - rMi + 1) + rMi);
+
+};
+
+var hitTest = function (x1, y1, w1, h1, x2, y2, w2, h2) {
+return !(
+
+x1 + w1 < x2 ||
+
+x2 + w2 < x1 ||
+
+y1 + h1 < y2 ||
+
+y2 + h2 < y1
+
+);
+
+};
+
+window.requestAnimFrame = (function () {
+return (
+
+window.requestAnimationFrame ||
+
+window.webkitRequestAnimationFrame ||
+
+window.mozRequestAnimationFrame ||
+
+window.oRequestAnimationFrame ||
+
+window.msRequestAnimationFrame ||
+
+function (a) {
+window.setTimeout(a, 1e3 / 60);
+
+}
+
+);
+
+})();
+
+self.init = function () {
+self.canvas = document.createElement("canvas");
+
+self.canvas.width = self.cw = $(window).innerWidth();
+
+self.canvas.height = self.ch = $(window).innerHeight();
+
+self.particles = [];
+
+self.partCount = 150;
+
+self.fireworks = [];
+
+self.mx = self.cw / 2;
+
+self.my = self.ch / 2;
+
+self.currentHue = 30;
+
+self.partSpeed = 5;
+
+self.partSpeedVariance = 10;
+
+self.partWind = 50;
+
+self.partFriction = 5;
+
+self.partGravity = 1;
+
+self.hueMin = 0;
+
+self.hueMax = 360;
+
+self.fworkSpeed = 4;
+
+self.fworkAccel = 10;
+
+self.hueVariance = 30;
+
+self.flickerDensity = 25;
+
+self.showShockwave = true;
+
+self.showTarget = false;
+
+self.clearAlpha = 25;
+
+$(document.body).append(self.canvas);
+
+self.ctx = self.canvas.getContext("2d");
+
+self.ctx.lineCap = "round";
+
+self.ctx.lineJoin = "round";
+
+self.lineWidth = 1;
+
+self.bindEvents();
+
+self.canvasLoop();
+
+self.canvas.onselectstart = function () {
+return false;
+
+};
+
+};
+
+self.createParticles = function (x, y, hue) {
+var countdown = self.partCount;
+
+while (countdown--) {
+var newParticle = {
+x: x,
+
+y: y,
+
+coordLast: [
+
+{ x: x, y: y },
+
+{ x: x, y: y },
+
+{ x: x, y: y }
+
+],
+
+angle: rand(0, 360),
+
+speed: rand(
+
+self.partSpeed - self.partSpeedVariance <= 0
+
+? 1
+
+: self.partSpeed - self.partSpeedVariance,
+
+self.partSpeed + self.partSpeedVariance
+
+),
+
+friction: 1 - self.partFriction / 100,
+
+gravity: self.partGravity / 2,
+
+hue: rand(hue - self.hueVariance, hue + self.hueVariance),
+
+brightness: rand(50, 80),
+
+alpha: rand(40, 100) / 100,
+
+decay: rand(10, 50) / 1000,
+
+wind: (rand(0, self.partWind) - self.partWind / 2) / 25,
+
+lineWidth: self.lineWidth
+
+};
+
+self.particles.push(newParticle);
+
+}
+
+};
+
+self.updateParticles = function () {
+var i = self.particles.length;
+
+while (i--) {
+var p = self.particles[i];
+
+var radians = (p.angle * Math.PI) / 180;
+
+var vx = Math.cos(radians) * p.speed;
+
+var vy = Math.sin(radians) * p.speed;
+
+p.speed *= p.friction;
+
+p.coordLast[2].x = p.coordLast[1].x;
+
+p.coordLast[2].y = p.coordLast[1].y;
+
+p.coordLast[1].x = p.coordLast[0].x;
+
+p.coordLast[1].y = p.coordLast[0].y;
+
+p.coordLast[0].x = p.x;
+
+p.coordLast[0].y = p.y;
+
+p.x += vx;
+
+p.y += vy;
+
+p.y += p.gravity;
+
+p.angle += p.wind;
+
+p.alpha -= p.decay;
+
+if (
+
+!hitTest(
+
+0,
+
+0,
+
+self.cw,
+
+self.ch,
+
+p.x - p.radius,
+
+p.y - p.radius,
+
+p.radius * 2,
+
+p.radius * 2
+
+) ||
+
+p.alpha < 0.05
+
+) {
+self.particles.splice(i, 1);
+
+}
+
+}
+
+};
+
+self.drawParticles = function () {
+var i = self.particles.length;
+
+while (i--) {
+var p = self.particles[i];
+
+var coordRand = rand(1, 3) - 1;
+
+self.ctx.beginPath();
+
+self.ctx.moveTo(
+
+Math.round(p.coordLast[coordRand].x),
+
+Math.round(p.coordLast[coordRand].y)
+
+);
+
+self.ctx.lineTo(Math.round(p.x), Math.round(p.y));
+
+self.ctx.closePath();
+
+self.ctx.strokeStyle =
+
+"hsla(" +
+
+p.hue +
+
+", 100%, " +
+
+p.brightness +
+
+"%, " +
+
+p.alpha +
+
+")";
+
+self.ctx.stroke();
+
+if (self.flickerDensity > 0) {
+var inverseDensity = 50 - self.flickerDensity;
+
+if (rand(0, inverseDensity) === inverseDensity) {
+self.ctx.beginPath();
+
+self.ctx.arc(
+
+Math.round(p.x),
+
+Math.round(p.y),
+
+rand(p.lineWidth, p.lineWidth + 3) / 2,
+
+0,
+
+Math.PI * 2,
+
+false
+
+);
+
+self.ctx.closePath();
+
+var randAlpha = rand(50, 100) / 100;
+
+self.ctx.fillStyle =
+
+"hsla(" +
+
+p.hue +
+
+", 100%, " +
+
+p.brightness +
+
+"%, " +
+
+randAlpha +
+
+")";
+
+self.ctx.fill();
+
+}
+
+}
+
+}
+
+};
+
+self.createFireworks = function (startX, startY, targetX, targetY) {
+var newFirework = {
+x: startX,
+
+y: startY,
+
+startX: startX,
+
+startY: startY,
+
+hitX: false,
+
+hitY: false,
+
+coordLast: [
+
+{ x: startX, y: startY },
+
+{ x: startX, y: startY },
+
+{ x: startX, y: startY }
+
+],
+
+targetX: targetX,
+
+targetY: targetY,
+
+speed: self.fworkSpeed,
+
+angle: Math.atan2(targetY - startY, targetX - startX),
+
+shockwaveAngle:
+
+Math.atan2(targetY - startY, targetX - startX) +
+
+90 * (Math.PI / 180),
+
+acceleration: self.fworkAccel / 100,
+
+hue: self.currentHue,
+
+brightness: rand(50, 80),
+
+alpha: rand(50, 100) / 100,
+
+lineWidth: self.lineWidth
+
+};
+
+self.fireworks.push(newFirework);
+
+};
+
+self.updateFireworks = function () {
+var i = self.fireworks.length;
+
+while (i--) {
+var f = self.fireworks[i];
+
+self.ctx.lineWidth = f.lineWidth;
+
+(vx = Math.cos(f.angle) * f.speed),
+
+(vy = Math.sin(f.angle) * f.speed);
+
+f.speed *= 1 + f.acceleration;
+
+f.coordLast[2].x = f.coordLast[1].x;
+
+f.coordLast[2].y = f.coordLast[1].y;
+
+f.coordLast[1].x = f.coordLast[0].x;
+
+f.coordLast[1].y = f.coordLast[0].y;
+
+f.coordLast[0].x = f.x;
+
+f.coordLast[0].y = f.y;
+
+if (f.startX >= f.targetX) {
+if (f.x + vx <= f.targetX) {
+f.x = f.targetX;
+
+f.hitX = true;
+
+} else {
+f.x += vx;
+
+}
+
+} else {
+if (f.x + vx >= f.targetX) {
+f.x = f.targetX;
+
+f.hitX = true;
+
+} else {
+f.x += vx;
+
+}
+
+}
+
+if (f.startY >= f.targetY) {
+if (f.y + vy <= f.targetY) {
+f.y = f.targetY;
+
+f.hitY = true;
+
+} else {
+f.y += vy;
+
+}
+
+} else {
+if (f.y + vy >= f.targetY) {
+f.y = f.targetY;
+
+f.hitY = true;
+
+} else {
+f.y += vy;
+
+}
+
+}
+
+if (f.hitX && f.hitY) {
+self.createParticles(f.targetX, f.targetY, f.hue);
+
+self.fireworks.splice(i, 1);
+
+}
+
+}
+
+};
+
+self.drawFireworks = function () {
+var i = self.fireworks.length;
+
+self.ctx.globalCompositeOperation = "lighter";
+
+while (i--) {
+var f = self.fireworks[i];
+
+self.ctx.lineWidth = f.lineWidth;
+
+var coordRand = rand(1, 3) - 1;
+
+self.ctx.beginPath();
+
+self.ctx.moveTo(
+
+Math.round(f.coordLast[coordRand].x),
+
+Math.round(f.coordLast[coordRand].y)
+
+);
+
+self.ctx.lineTo(Math.round(f.x), Math.round(f.y));
+
+self.ctx.closePath();
+
+self.ctx.strokeStyle =
+
+"hsla(" +
+
+f.hue +
+
+", 100%, " +
+
+f.brightness +
+
+"%, " +
+
+f.alpha +
+
+")";
+
+self.ctx.stroke();
+
+if (self.showTarget) {
+self.ctx.save();
+
+self.ctx.beginPath();
+
+self.ctx.arc(
+
+Math.round(f.targetX),
+
+Math.round(f.targetY),
+
+rand(1, 8),
+
+0,
+
+Math.PI * 2,
+
+false
+
+);
+
+self.ctx.closePath();
+
+self.ctx.lineWidth = 1;
+
+self.ctx.stroke();
+
+self.ctx.restore();
+
+}
+
+if (self.showShockwave) {
+self.ctx.save();
+
+self.ctx.translate(Math.round(f.x), Math.round(f.y));
+
+self.ctx.rotate(f.shockwaveAngle);
+
+self.ctx.beginPath();
+
+self.ctx.arc(0, 0, 1 * (f.speed / 5), 0, Math.PI, true);
+
+self.ctx.strokeStyle =
+
+"hsla(" +
+
+f.hue +
+
+", 100%, " +
+
+f.brightness +
+
+"%, " +
+
+rand(25, 60) / 100 +
+
+")";
+
+self.ctx.lineWidth = f.lineWidth;
+
+self.ctx.stroke();
+
+self.ctx.restore();
+
+}
+
+}
+
+};
+
+self.bindEvents = function () {
+$(window).on("resize", function () {
+clearTimeout(self.timeout);
+
+self.timeout = setTimeout(function () {
+self.canvas.width = self.cw = $(window).innerWidth();
+
+self.canvas.height = self.ch = $(window).innerHeight();
+
+self.ctx.lineCap = "round";
+
+self.ctx.lineJoin = "round";
+
+}, 100);
+
+});
+
+$(self.canvas).on("mousedown", function (e) {
+self.mx = e.pageX - self.canvas.offsetLeft;
+
+self.my = e.pageY - self.canvas.offsetTop;
+
+self.currentHue = rand(self.hueMin, self.hueMax);
+
+self.createFireworks(self.cw / 2, self.ch, self.mx, self.my);
+
+$(self.canvas).on("mousemove.fireworks", function (e) {
+self.mx = e.pageX - self.canvas.offsetLeft;
+
+self.my = e.pageY - self.canvas.offsetTop;
+
+self.currentHue = rand(self.hueMin, self.hueMax);
+
+self.createFireworks(self.cw / 2, self.ch, self.mx, self.my);
+
+});
+
+});
+
+$(self.canvas).on("mouseup", function (e) {
+$(self.canvas).off("mousemove.fireworks");
+
+});
+
+};
+
+self.clear = function () {
+self.particles = [];
+
+self.fireworks = [];
+
+self.ctx.clearRect(0, 0, self.cw, self.ch);
+
+};
+
+self.canvasLoop = function () {
+requestAnimFrame(self.canvasLoop, self.canvas);
+
+self.ctx.globalCompositeOperation = "destination-out";
+
+self.ctx.fillStyle = "rgba(0,0,0," + self.clearAlpha / 100 + ")";
+
+self.ctx.fillRect(0, 0, self.cw, self.ch);
+
+self.updateFireworks();
+
+self.updateParticles();
+
+self.drawFireworks();
+
+self.drawParticles();
+
+};
+
+self.init();
+
+};
+
+var fworks = new Fireworks();
+
+});
+
+</script>
+
+</body>
+
+</html>
